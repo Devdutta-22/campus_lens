@@ -15,10 +15,11 @@
     "@google/generative-ai": "^0.24.1",
     "@mui/icons-material": "^7.3.6",
     "@mui/material": "^7.3.6",
-    "@vis.gl/react-google-maps": "^1.7.1",
     "firebase": "^12.7.0",
+    "leaflet": "^1.9.4",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-leaflet": "^5.0.0",
     "react-webcam": "^7.2.0"
   },
   "devDependencies": {
