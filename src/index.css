@@ -66,3 +66,32 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+/* Import Magical Font */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@300;400&display=swap');
+
+body {
+  margin: 0;
+  padding: 0;
+  background: radial-gradient(circle at 50% 50%, #1a233a 0%, #05070a 100%);
+  color: white;
+  font-family: 'Lato', sans-serif;
+  overflow: hidden; /* App-like feel */
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar hiding for clean UI */
+::-webkit-scrollbar {
+  width: 0px;
+  background: transparent;
+}
+
+/* The "Magic Particle" animation (Optional Polish) */
+@keyframes pulse-gold {
+  0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.4); }
+  70% { box-shadow: 0 0 0 15px rgba(255, 215, 0, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
+}
+
+.magic-pulse {
+  animation: pulse-gold 2s infinite;
+}
