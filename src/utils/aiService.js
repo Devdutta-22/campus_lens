@@ -1,7 +1,13 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// ⚠️ IMPORTANT: In a real app, hide this key. For Hackathon, it's okay in code.
-const API_KEY = "AIzaSyBhmdUhS5uFX0Ol1WZ_Q0IP_PZ7_oA0Jn8"; 
+// ✅ SECURE METHOD: Read from Environment Variable
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+
+// Safety Check: Alert you if the key is missing during dev
+if (!API_KEY) {
+  console.error("Missing Gemini API Key! Check your .env file.");
+}
+
 const genAI = new GoogleGenerativeAI(API_KEY);
 
 export const getCampusTip = async (locationName) => {
@@ -17,6 +23,6 @@ export const getCampusTip = async (locationName) => {
     return response.text();
   } catch (error) {
     console.error("Gemini Error:", error);
-    return "Check out this cool spot!"; // Fallback text
+    return "Check out this cool spot!"; 
   }
 };

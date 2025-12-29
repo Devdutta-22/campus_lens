@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# 🔴 SECURITY: Ignore the environment file
+.env

@@ -1,57 +1,111 @@
 import React, { useState, useEffect } from 'react';
+import MapRadar from './components/MapRadar';
 import ARView from './components/ARView';
-import { getCampusTip } from './utils/aiService';
-import { Button, CircularProgress, Container, Typography } from '@mui/material';
-
-// 📍 COORDINATES (Go to Google Maps -> Right Click -> Get Lat/Long)
-const LOCATIONS = {
-  LIBRARY: { lat: 28.364, long: 77.534, name: "Library" },
-  LAB: { lat: 28.365, long: 77.535, name: "Innovation Lab" }
-};
+import { db } from './firebaseConfig';
+import { collection, addDoc, getDocs } from 'firebase/firestore';
 
 function App() {
-  const [unlocked, setUnlocked] = useState(false);
-  const [aiTip, setAiTip] = useState("Loading tip...");
-  const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState('MAP'); // 'MAP' or 'AR'
+  const [drops, setDrops] = useState([]);
+  const [userLocation, setUserLocation] = useState(null);
+  const [selectedDrop, setSelectedDrop] = useState(null);
 
-  // Function to spoof location for DEMO (Critical for Judges table!)
-  const handleDevUnlock = async () => {
-    setLoading(true);
-    const tip = await getCampusTip("Library");
-    setAiTip(tip);
-    setUnlocked(true);
-    setLoading(false);
+  // 1. 🛰️ Get Live GPS Location
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (err) => console.error("GPS Error:", err),
+      { enableHighAccuracy: true }
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, []);
+
+  // 2. 📥 Fetch Drops from Firebase
+  const fetchDrops = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, "campus_drops"));
+      const dropsList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setDrops(dropsList);
+    } catch (e) {
+      console.error("Error fetching drops:", e);
+    }
   };
 
-  if (unlocked) {
-    // Show the AR Screen
-    return <ARView modelSrc="/assets/book_model.glb" note={aiTip} />;
+  useEffect(() => { fetchDrops(); }, []);
+
+  // 3. ➕ "Drop" Logic (Save to DB)
+  const handleDropObject = async () => {
+    if (!userLocation) {
+      alert("⚠️ Waiting for GPS... Stand outside!");
+      return;
+    }
+
+    const message = prompt("💬 What is the secret message for this spot?");
+    if (!message) return;
+
+    await addDoc(collection(db, "campus_drops"), {
+      latitude: userLocation.lat,
+      longitude: userLocation.lng,
+      message: message,
+      modelType: "book", 
+      timestamp: Date.now()
+    });
+    
+    alert("✅ Object Dropped! It is now on the map.");
+    fetchDrops(); 
+  };
+
+  // 4. 🔓 "Unlock" Logic (Distance Check)
+  const handleMarkerClick = (drop) => {
+    if (!userLocation) return;
+    
+    // Calculate distance in meters (Haversine Formula)
+    const R = 6371e3; 
+    const φ1 = userLocation.lat * Math.PI/180;
+    const φ2 = drop.latitude * Math.PI/180;
+    const Δφ = (drop.latitude - userLocation.lat) * Math.PI/180;
+    const Δλ = (drop.longitude - userLocation.lng) * Math.PI/180;
+
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const distance = R * c; 
+
+    // UNLOCK DISTANCE: 30 Meters
+    if (distance < 30) { 
+      alert("🎉 You found it! Opening AR Camera...");
+      setSelectedDrop(drop);
+      setMode('AR');
+    } else {
+      alert(`🔒 Too far! Walk ${Math.round(distance)}m closer to unlock.`);
+    }
+  };
+
+  if (mode === 'AR') {
+    return (
+      <>
+        <button 
+          onClick={() => setMode('MAP')} 
+          style={{
+            position:'absolute', top:20, left:20, zIndex:999,
+            padding: '10px 20px', background: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold'
+          }}>
+          🔙 Back to Map
+        </button>
+        <ARView modelSrc="/assets/book_model.glb" note={selectedDrop?.message} />
+      </>
+    );
   }
 
   return (
-    <Container style={{ textAlign: 'center', marginTop: '50px' }}>
-      <Typography variant="h4" gutterBottom>CampusLens 🔍</Typography>
-      <Typography variant="body1" color="textSecondary">
-        Walk to a campus hotspot to unlock AR notes.
-      </Typography>
-
-      <div style={{ marginTop: '40px' }}>
-        {loading ? <CircularProgress /> : (
-          <Button 
-            variant="contained" 
-            color="primary" 
-            size="large"
-            onClick={handleDevUnlock} // Use GPS logic here in real version
-          >
-            I am at the Library (Unlock)
-          </Button>
-        )}
-      </div>
-      
-      <p style={{marginTop: '20px', fontSize: '12px', color: 'gray'}}>
-        Powered by Google Gemini & WebXR
-      </p>
-    </Container>
+    <MapRadar 
+      drops={drops} 
+      userLocation={userLocation} 
+      onEnterAR={handleMarkerClick} 
+      onDropObject={handleDropObject}
+    />
   );
 }
 
