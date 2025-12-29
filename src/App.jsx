@@ -37,10 +37,10 @@ function App() {
   return (
     <ThemeProvider theme={magicTheme}>
       <CssBaseline />
-      
+
       {/* === SCREEN CONTENT === */}
       <div style={{ height: '100vh', paddingBottom: '56px' }}>
-        
+
         {/* TAB 0: MARAUDER'S MAP */}
         {currentTab === 0 && (
           <MagicMap drops={drops} userLocation={userLocation} onMarkerClick={() => setCurrentTab(1)} />
@@ -48,13 +48,17 @@ function App() {
 
         {/* TAB 1: THE LENS (AR) */}
         {currentTab === 1 && (
-          <ARView modelSrc="/assets/book_model.glb" note="Magic Detected..." />
+          <ARView
+            modelSrc="/assets/book_model.glb"
+            note={selectedDrop ? selectedDrop.message : "Hidden Magic"}
+            distance={distanceToDrop} // Pass the live distance!
+          />
         )}
 
         {/* TAB 2: JOURNAL (Placeholder for now) */}
         {currentTab === 2 && (
-          <div style={{padding: 20, textAlign: 'center', paddingTop: 100}}>
-            <h2 style={{fontFamily: 'Cinzel', color: '#FFD700'}}>Field Guide</h2>
+          <div style={{ padding: 20, textAlign: 'center', paddingTop: 100 }}>
+            <h2 style={{ fontFamily: 'Cinzel', color: '#FFD700' }}>Field Guide</h2>
             <p>Artifacts Collected: 0/10</p>
           </div>
         )}
@@ -68,7 +72,7 @@ function App() {
           value={currentTab}
           onChange={(event, newValue) => setCurrentTab(newValue)}
           sx={{
-            background: 'rgba(10, 15, 30, 0.9)', 
+            background: 'rgba(10, 15, 30, 0.9)',
             backdropFilter: 'blur(10px)',
             borderTop: '1px solid #333'
           }}
